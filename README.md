@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="128" alt="Shelfy app icon"></p>
+
 # Shelfy
 
 A free, open-source drag-and-drop shelf for macOS. Shake your mouse while dragging files and a small floating shelf appears. Drop the files on it, go wherever you need to, then drag them out again, together or one at a time.
@@ -59,7 +61,7 @@ cd shelfy
 open Shelfy.app
 ```
 
-`build.sh` compiles a universal binary and ad-hoc signs it. To regenerate the README screenshots, run `./scripts/screenshots.sh`.
+`build.sh` compiles a universal binary and ad-hoc signs it. To regenerate the README screenshots, run `./scripts/screenshots.sh`. The app icon is drawn in code by `scripts/make-icon.swift`; run `./scripts/make-icon.sh` after changing it.
 
 ## How it works
 

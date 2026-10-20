@@ -5,8 +5,9 @@ cd "${0:A:h}"
 
 APP=Shelfy.app
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Info.plist "$APP/Contents/Info.plist"
+cp Resources/AppIcon.icns "$APP/Contents/Resources/"
 
 # Universal binary: Apple silicon + Intel.
 for arch in arm64 x86_64; do

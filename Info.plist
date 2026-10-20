@@ -4,6 +4,8 @@
 <dict>
     <key>CFBundleExecutable</key>
     <string>Shelfy</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>io.github.adamly218.shelfy</string>
     <key>CFBundleName</key>
