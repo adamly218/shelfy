@@ -1,11 +1,13 @@
 import AppKit
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private let shakeDetector = ShakeDetector()
     private var shelves: [ShelfPanel] = []
+    private lazy var settingsWindow = SettingsWindow()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Settings.registerDefaults()
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = MenuBarIcon.make()
 
@@ -14,23 +16,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Close All Shelves", action: #selector(closeAllShelves), keyEquivalent: "").target = self
         menu.addItem(.separator())
 
-        let sensitivity = NSMenuItem(title: "Shake Sensitivity", action: nil, keyEquivalent: "")
-        let sensitivityMenu = NSMenu()
-        for level in ShakeDetector.Sensitivity.allCases {
-            let item = NSMenuItem(title: level.title, action: #selector(setSensitivity(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = level.rawValue
-            item.state = level == shakeDetector.sensitivity ? .on : .off
-            sensitivityMenu.addItem(item)
-        }
-        sensitivity.submenu = sensitivityMenu
-        menu.addItem(sensitivity)
+        let shake = NSMenuItem(title: "Shake to Open", action: #selector(toggleShake), keyEquivalent: "")
+        shake.target = self
+        menu.addItem(shake)
+        menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",").target = self
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Shelfy", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.delegate = self
         statusItem.menu = menu
 
         shakeDetector.onShake = { [weak self] point in self?.showShelf(near: point) }
         shakeDetector.start()
+
+        // For screenshots: SHELFY_SETTINGS_SNAPSHOT=/path.png saves the Settings window.
+        if let path = ProcessInfo.processInfo.environment["SHELFY_SETTINGS_SNAPSHOT"] {
+            settingsWindow.present()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [self] in settingsWindow.snapshot(to: path) }
+        }
 
         // For testing: SHELFY_DEMO_FILES="/a:/b" opens a shelf holding those files.
         if let demo = ProcessInfo.processInfo.environment["SHELFY_DEMO_FILES"] {
@@ -66,10 +68,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         shelves.removeAll()
     }
 
-    @objc private func setSensitivity(_ sender: NSMenuItem) {
-        guard let raw = sender.representedObject as? Int,
-              let level = ShakeDetector.Sensitivity(rawValue: raw) else { return }
-        shakeDetector.sensitivity = level
-        sender.menu?.items.forEach { $0.state = $0 == sender ? .on : .off }
+    @objc private func toggleShake() {
+        Settings.shakeEnabled.toggle()
+    }
+
+    @objc private func openSettings() {
+        settingsWindow.present()
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        menu.item(withTitle: "Shake to Open")?.state = Settings.shakeEnabled ? .on : .off
     }
 }
