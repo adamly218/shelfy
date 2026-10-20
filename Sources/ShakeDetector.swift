@@ -7,37 +7,16 @@ import AppKit
 /// the mouse went down and it holds file URLs. Global mouse monitors don't need
 /// Accessibility permission.
 final class ShakeDetector {
-    enum Sensitivity: Int, CaseIterable {
-        case normal, high, veryHigh
-
-        var title: String {
-            switch self {
-            case .normal: return "Normal"
-            case .high: return "High"
-            case .veryHigh: return "Very High"
-            }
-        }
-
-        /// Minimum horizontal travel (points) for a stroke to count.
-        var minStroke: CGFloat {
-            switch self {
-            case .normal: return 60
-            case .high: return 40
-            case .veryHigh: return 25
-            }
-        }
-
-        /// Direction changes needed inside the time window.
-        var reversalsNeeded: Int { self == .normal ? 4 : 3 }
-    }
-
     var onShake: ((NSPoint) -> Void)?
-    var sensitivity: Sensitivity {
-        get { Sensitivity(rawValue: UserDefaults.standard.integer(forKey: "ShakeSensitivity")) ?? .normal }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: "ShakeSensitivity") }
-    }
 
-    private let window: TimeInterval = 0.8
+    // Tuning from Settings.sensitivity: 0 = big shake needed, 1 = small wiggle is enough.
+    /// Minimum horizontal travel (points) for a stroke to count.
+    private var minStroke: CGFloat { 90 - 70 * CGFloat(Settings.sensitivity) }
+    /// Direction changes needed inside the time window.
+    private var reversalsNeeded: Int { Settings.sensitivity < 0.5 ? 4 : 3 }
+    /// How long (seconds) the reversals may take.
+    private var window: TimeInterval { 0.7 + 0.3 * Settings.sensitivity }
+
     private let dragPasteboard = NSPasteboard(name: .drag)
     private var monitors: [Any] = []
 
@@ -71,7 +50,8 @@ final class ShakeDetector {
     }
 
     private func mouseDragged() {
-        guard !firedThisDrag else { return }
+        guard !firedThisDrag, Settings.shakeEnabled else { return }
+        if let flag = Settings.modifier.flag, !NSEvent.modifierFlags.contains(flag) { return }
 
         // The drag pasteboard fills a moment after the drag starts, so keep checking until it does.
         if isFileDrag != true {
@@ -89,7 +69,7 @@ final class ShakeDetector {
         let newDirection: CGFloat = delta > 0 ? 1 : -1
         if newDirection != direction {
             // Only count a reversal if the stroke before it was long enough.
-            if direction != 0, abs(x - strokeStartX) >= sensitivity.minStroke {
+            if direction != 0, abs(x - strokeStartX) >= minStroke {
                 registerReversal()
             }
             direction = newDirection
@@ -101,7 +81,7 @@ final class ShakeDetector {
         let now = ProcessInfo.processInfo.systemUptime
         reversals.append(now)
         reversals.removeAll { now - $0 > window }
-        if reversals.count >= sensitivity.reversalsNeeded {
+        if reversals.count >= reversalsNeeded {
             firedThisDrag = true
             onShake?(NSEvent.mouseLocation)
         }

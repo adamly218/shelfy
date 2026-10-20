@@ -19,7 +19,12 @@ A free, open-source drag-and-drop shelf for macOS. Shake your mouse while draggi
 - **Stays out of the way:** the shelf floats above other windows, on every desktop and over full-screen apps, without taking focus from the app you're dragging from.
 - **Closes itself** once the last file is dragged out.
 - **Several shelves** at once, from the menu bar icon or by shaking again.
-- **Shake sensitivity:** Normal, High or Very High.
+- **Settings window** (menu bar icon → **Settings…**, or ⌘,):
+  - shake **sensitivity** slider, from Very Low to Very High
+  - turn shake-to-open on or off, or require a key (⌥, ⌃, ⌘ or ⇧) to be held while shaking
+  - choose where a shelf opens: beside the cursor, under it, or in the center of the screen
+  - keep shelves above other windows, show them on every desktop, close them when empty, play a sound when one opens
+  - open Shelfy when you log in
 - Right-click a file to open it, show it in Finder or remove it from the shelf. Double-click to open.
 - Follows Light and Dark Mode and your accent color.
 - Universal app: runs natively on Apple silicon and Intel Macs.
@@ -34,7 +39,7 @@ A free, open-source drag-and-drop shelf for macOS. Shake your mouse while draggi
 
    Or run this once in Terminal: `xattr -dr com.apple.quarantine /Applications/Shelfy.app`
 
-Shelfy lives in the menu bar (no Dock icon). To start it automatically, add it in **System Settings → General → Login Items**.
+Shelfy lives in the menu bar (no Dock icon). To start it automatically, turn on **Open Shelfy when you log in** in Shelfy's Settings.
 
 Requires macOS 13 Ventura or later. No permissions are needed: watching mouse drags doesn't require Accessibility access.
 
@@ -48,7 +53,7 @@ Requires macOS 13 Ventura or later. No permissions are needed: watching mouse dr
    - drag **Drag all** to move all of them together
 5. When the shelf is empty it closes. You can also close it with the ✕ button.
 
-From the menu bar icon you can open a **New Shelf**, **Close All Shelves**, change the **Shake Sensitivity**, or quit.
+From the menu bar icon you can open a **New Shelf**, **Close All Shelves**, turn **Shake to Open** on or off, open **Settings…**, or quit.
 
 ## Build from source
 

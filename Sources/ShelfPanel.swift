@@ -5,6 +5,7 @@ import AppKit
 final class ShelfPanel: NSPanel {
     private static let headerHeight: CGFloat = 34
     private static let cornerRadius: CGFloat = 24
+    static let openSound = NSSound(named: "Pop")
 
     private let shelfView = ShelfView()
     private let header = ShelfHeaderView()
@@ -15,8 +16,7 @@ final class ShelfPanel: NSPanel {
         super.init(contentRect: NSRect(origin: .zero, size: .zero),
                    styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered, defer: false)
-        level = .floating
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        applySettings()
         isMovableByWindowBackground = true
         hidesOnDeactivate = false
         isReleasedWhenClosed = false
@@ -44,8 +44,18 @@ final class ShelfPanel: NSPanel {
 
         header.onClose = { [weak self] in self?.animateClose() }
         shelfView.onItemsChanged = { [weak self] in self?.contentsChanged() }
-        shelfView.onEmptied = { [weak self] in self?.animateClose() }
+        shelfView.onEmptied = { [weak self] in
+            if Settings.closeWhenEmpty { self?.animateClose() }
+        }
         contentsChanged()
+        NotificationCenter.default.addObserver(self, selector: #selector(applySettings), name: Settings.didChange, object: nil)
+    }
+
+    @objc private func applySettings() {
+        level = Settings.alwaysOnTop ? .floating : .normal
+        collectionBehavior = Settings.allDesktops
+            ? [.canJoinAllSpaces, .fullScreenAuxiliary]
+            : [.moveToActiveSpace, .fullScreenAuxiliary]
     }
 
     /// Liquid Glass on macOS 26+, frosted blur before that.
@@ -121,11 +131,20 @@ final class ShelfPanel: NSPanel {
     }
 
     func show(near point: NSPoint) {
-        // Place the shelf just right of the cursor, kept on screen.
+        // Place the shelf where Settings says, kept on screen.
         let screen = NSScreen.screens.first { NSMouseInRect(point, $0.frame, false) } ?? NSScreen.main
-        var origin = NSPoint(x: point.x + 40, y: point.y - frame.height / 2)
+        var origin: NSPoint
+        switch Settings.placement {
+        case .besideCursor: origin = NSPoint(x: point.x + 40, y: point.y - frame.height / 2)
+        case .underCursor: origin = NSPoint(x: point.x - frame.width / 2, y: point.y - frame.height / 2)
+        case .screenCenter:
+            let visible = screen?.visibleFrame ?? .zero
+            origin = NSPoint(x: visible.midX - frame.width / 2, y: visible.midY - frame.height / 2)
+        }
         if let visible = screen?.visibleFrame {
-            if origin.x + frame.width > visible.maxX { origin.x = point.x - 40 - frame.width }
+            if Settings.placement == .besideCursor, origin.x + frame.width > visible.maxX {
+                origin.x = point.x - 40 - frame.width
+            }
             origin.x = min(max(origin.x, visible.minX), visible.maxX - frame.width)
             origin.y = min(max(origin.y, visible.minY), visible.maxY - frame.height)
         }
@@ -135,6 +154,7 @@ final class ShelfPanel: NSPanel {
         setFrame(target.offsetBy(dx: 0, dy: -10), display: false)
         alphaValue = 0
         orderFrontRegardless()
+        if Settings.playSound { Self.openSound?.play() }
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.2
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
